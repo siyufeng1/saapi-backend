@@ -1,0 +1,81 @@
+package com.siyufeng.saapiclientsdk.client;
+
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONUtil;
+import com.siyufeng.saapiclientsdk.model.User;
+
+
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.siyufeng.saapiclientsdk.utils.SignUtils.getSign;
+import static java.lang.System.currentTimeMillis;
+
+/**
+ * @author 司雨枫
+ * <p>
+ * 调用第三方接口的客户端
+ */
+public class SaApiClient {
+
+    public static final String GATEWAY_HOST = "http://localhost:8090";
+
+    private String accessKey;
+
+    private String secretKey;
+
+    public SaApiClient(String accessKey, String secretKey) {
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
+    }
+
+    public String getNameByGet(String name) {
+        //可以单独传入http参数，这样参数会自动做URL编码，拼接在URL中
+        HashMap<String, Object> paramMap = new HashMap<String, Object>();
+        paramMap.put("name", name);
+        String result = HttpUtil.get(GATEWAY_HOST + "/api/name/get", paramMap);
+        System.out.println(result);
+        return result;
+    }
+
+    public String getNameByPost(String name) {
+        //可以单独传入http参数，这样参数会自动做URL编码，拼接在URL中
+        HashMap<String, Object> paramMap = new HashMap<String, Object>();
+        paramMap.put("name", name);
+        String result = HttpUtil.post(GATEWAY_HOST + "/api/name/post", paramMap);
+        System.out.println(result);
+        return result;
+    }
+
+    private Map<String, String> getHeaderMap(String body) {
+        Map<String, String> headers = new HashMap<String, String>();
+        headers.put("accessKey", accessKey);
+        //一定不能直接发送
+        //       headers.put("secretKey",secretKey);
+        headers.put("nonce", RandomUtil.randomNumbers(4));
+        headers.put("body", body);
+        headers.put("timestamp", String.valueOf(currentTimeMillis()));
+        headers.put("sign", getSign(body, secretKey));
+
+        return headers;
+    }
+
+
+    public String getUserNameByPost(User user) {
+        String json = JSONUtil.toJsonStr(user);
+        Map<String, String> headers = getHeaderMap(json);
+        HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST + "/api/name/user")
+                .addHeaders(headers)
+                .body(json)
+                .execute();
+        System.out.println(httpResponse.getStatus());
+        String result = httpResponse.body();
+        System.out.println(result);
+        return result;
+    }
+
+
+}
